@@ -5,11 +5,8 @@
 //
 //-----------------------------------------------------------
 
-#include <windows.h> 
-#include <strsafe.h>
-#include <math.h>
-#include <stdio.h> 
-#include <string.h> 
+#include <windows.h>
+#include <math.h> 
 #include <assert.h>
 #include "conic.h"
 
@@ -397,7 +394,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
     static int keypress = -1;
     static RECT region;
     static POINT frame[5];
-    static BOUNCE *bounce;
+    static BOUNCE *bounce = 0;
     static SPLAT splat;
 
     switch (message)
