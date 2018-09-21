@@ -110,8 +110,8 @@ int GetOctant(int dfdx, int dfdy)
 // that are passed to this function. To draw a full ellipse instead
 // of an arc, set xe = xs and ye = ys.
 //
-int Conic(int xs, int ys, int xe, int ye,
-          int A, int B, int C, int D, int E, int F)
+void Conic(int xs, int ys, int xe, int ye,
+           int A, int B, int C, int D, int E, int F)
 {
     int x, y, swap, octant, octantCount, pixelCount;
     int dxsquare, dysquare, dxdiag, dydiag;
@@ -133,7 +133,7 @@ int Conic(int xs, int ys, int xe, int ye,
     else
         octantCount = 8;  // draw full ellipse (8 octants)
 
-    // Initialize loop control parameters
+    // Adjust parameters for starting octant
     dxdiag = dydiag = 1;
     dxsquare = dysquare = 0;
     if ((octant + 1) & 4)
@@ -177,10 +177,11 @@ int Conic(int xs, int ys, int xe, int ye,
         v  = -v;   k3 = -k3;
     }
 
-    // Draw conic arc from start point to end point
+    // Each iteration of for-loop draws one octant of conic curve
     x = xs;
     y = ys;
-    for (pixelCount = -1; octantCount >= 0; --octantCount)
+    pixelCount = -1;
+    for (;;)
     {
         // If final octant, count number of pixels to end of arc
         if (!octantCount)
@@ -191,12 +192,12 @@ int Conic(int xs, int ys, int xe, int ye,
                 pixelCount = 1 + abs(xe - x);
         }
 
-        // Track curve through next drawing octant
+        // Track curve through current drawing octant
         while ((u > 0 || octant & 1) && (v < 0 || ~octant & 1))
         {
             DrawPixel(x, y);
             if (--pixelCount == 0)
-                return 0;
+                return;  // we drew all pixels in final octant
 
             if (d < 0)
             {
@@ -217,6 +218,14 @@ int Conic(int xs, int ys, int xe, int ye,
         }
 
         // Cross boundary into next drawing octant
+        if (--octantCount < 0)
+        {
+            // Failed to draw all pixels in final octant
+            Line(x, y, xe, ye);  // band-aid okay here?
+            return;
+        } 
+
+        // Adjust drawing parameters for new octant
         if (++octant & 1)
         {    
             // Cross square octant boundary
@@ -240,8 +249,6 @@ int Conic(int xs, int ys, int xe, int ye,
             swap = dxsquare;  dxsquare = -dysquare;  dysquare = swap;
         }
     }
-    Line(x, y, xe, ye);  // TO DO: Need a better band-aid than this
-    return pixelCount;
 }
 
 // Draws the outline of a full ellipse using an incremental curve-
@@ -251,9 +258,9 @@ int Conic(int xs, int ys, int xe, int ye,
 // diameters can be at arbitrary angles with respect to each other.
 // Described in terms of the parallelogram in which the ellipse is 
 // inscribed, the ellipse touches the parallelogram at points P1 and 
-// P2, which are located at the midpoints of two adjacent sides of the 
-// parallelogram. The function's six arguments are the x and y coords
-// (x0,y0) at P0, (x1,y1) at P1, and (x2,y2) at P2.
+// P2, which are located at the midpoints of two adjacent sides of 
+// the parallelogram. The function's six arguments are the x and y
+// coordinates (x0,y0) at P0, (x1,y1) at P1, and (x2,y2) at P2.
 //
 void DrawEllipse(int x0, int y0, int x1, int y1, int x2, int y2)
 {
