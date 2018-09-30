@@ -389,7 +389,7 @@ void DrawAxes(HDC hdc, int x0, int y0, int x1, int y1, int x2, int y2)
     B = -2*(xp*yp + xq*yq);
     if (B == 0)
     {
-        return;  // conjugate diameters are perpendicular
+        return;  // an ellipse in standard position, or a circle
     }
     C = xp*xp + xq*xq;
     xprod = xq*yp - xp*yq;
@@ -408,7 +408,7 @@ void DrawAxes(HDC hdc, int x0, int y0, int x1, int y1, int x2, int y2)
         denom = A + (B + C*slope)*slope;
         if (denom <= 0)
         {
-            return;  // degenerate ellipse
+            return;  // ultra-thin ellipse
         }
         x = sqrt(-F/denom);
         y = slope*x;
