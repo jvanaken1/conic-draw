@@ -1,14 +1,20 @@
-//-----------------------------------------------------------
+//---------------------------------------------------------------------
 // 
-// demo1.cpp -- Demonstrates use of Pitteway's algorithm for
-//     drawing rotated ellipses 
+// demo1.cpp -- Demonstrates the use of Pitteway's algorithm for
+//     drawing rotated ellipses. This version of the demo runs on the
+//     Win32 API in Windows. 
 //
-//-----------------------------------------------------------
+//---------------------------------------------------------------------
 
 #include <windows.h>
 #include <math.h> 
 #include <assert.h>
 #include "conic.h"
+#include "demo.h"
+
+// Global handle and color values used by the DrawPixel function
+HDC g_hdc = 0;
+COLOR g_color = 0;
 
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 
@@ -29,7 +35,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
     wndclass.hInstance     = hInstance; 
     wndclass.hIcon         = LoadIcon(NULL, IDI_APPLICATION); 
     wndclass.hCursor       = LoadCursor(NULL, IDC_ARROW); 
-    wndclass.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH); 
+    wndclass.hbrBackground = (HBRUSH)GetStockObject(NULL_BRUSH); 
     wndclass.lpszMenuName  = NULL; 
     wndclass.lpszClassName = szAppName; 
 
@@ -45,7 +51,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
                         TEXT("Conic Curve Demo 1"), 
                         WS_OVERLAPPEDWINDOW, 
                         CW_USEDEFAULT, CW_USEDEFAULT, 
-                        CW_USEDEFAULT, CW_USEDEFAULT, 
+                        DEMO_WIDTH+33, DEMO_HEIGHT+56, 
                         NULL, NULL, hInstance, NULL); 
 
     ShowWindow(hwnd, iCmdShow); 
@@ -58,163 +64,9 @@ int WINAPI WinMain(HINSTANCE hInstance,
     return msg.wParam; 
 }
 
-// Specifies an animated parallelogram that bounces off the sides of
-// a rectangular drawing area. The structure specifies the four
-// vertexes of the parallelogram and the velocities at which the 
-// vertexes are moving. Only integer arithmetic is used. 
-struct BOUNCE
-{
-    // Points J = pt[0] and K = pt[2] are opposing vertexes of the
-    // parallelogram, as are P = pt[1] and Q = pt[3]. A parallelogram
-    // is uniquely defined by three vertexes (P, K, Q); the fourth
-    // vertex (J) is determined by symmetry. Note: vpt[0] is unused.
-    POINT pt[4];   // vertexes (in order) J, P, K, Q
-    POINT vpt[4];  // velocities of points -, P, K, Q
-    int frameWidth;  // width of rectangular drawing region
-    int frameHeight;  // height of rectangular drawing region
-
-    BOUNCE(int width, int height)
-    {
-        POINT vxy[] = { { 0, 0 }, { 5, 3 }, { 9, 7 }, { 6, 2 } };
-
-        for (int i = 0; i < 4; i++)
-            vpt[i] = vxy[i];
-
-        pt[0].x = 10;
-        pt[0].y = 10;
-        pt[1].x = width - 10;
-        pt[1].y = 10;
-        pt[2].x = width - 10;
-        pt[2].y = height - 10;
-        pt[3].x = 10;
-        pt[3].y = height - 10;
-        frameWidth = width;
-        frameHeight = height;
-    }
-
-    ~BOUNCE()
-    {
-    }
-
-    // Copies the x-y coordinates for the four vertexes of the current
-    // parallelogram to output array xy. Then moves the vertexes to
-    // their updated positions in preparation for the next Update call.
-    void Update(POINT xy[])
-    {
-        int i, diff;
-
-        for (i = 0; i < 4; i++)
-        {
-            xy[i] = pt[i];
-        }
-
-        // Update P, K, and Q. Note that vpt[0] is never used.
-        for (i = 1; i < 4; i++)  
-        {
-            pt[i].x += vpt[i].x;
-            pt[i].y += vpt[i].y;
-        }
-
-        // Make sure that the x and y offsets between K and the
-        // two vertexes P and Q are even so that the integer
-        // coordinates of the conjugate diameters will exactly
-        // divide the sides of the parallelogram.
-        for (i = 1; i < 4; i += 2)  
-        {
-            diff = pt[i].x - pt[2].x;
-            if (diff & 1)
-            {
-                pt[i].x += (diff > 0) ? 1 : -1;
-            }
-            diff = pt[i].y - pt[2].y;
-            if (diff & 1)
-            {
-                pt[i].y += (diff > 0) ? 1 : -1;
-            }
-        }
-
-        // Check for collisions with the boundaries of
-        // the rectangular drawing window.
-        for (i = 1; i < 4; i++)  
-        {
-            if (pt[i].x < 0 || frameWidth <= pt[i].x)
-            {
-                vpt[i].x = -vpt[i].x;
-                if (pt[i].x < 0)
-                {
-                    pt[i].x = -pt[i].x;
-                }
-                else
-                {
-                    pt[i].x = 2*frameWidth - pt[i].x - 1;
-                }                        
-            }
-            if (pt[i].y < 0 || frameHeight <= pt[i].y)
-            {
-                vpt[i].y = -vpt[i].y;
-                if (pt[i].y < 0)
-                {
-                    pt[i].y = -pt[i].y;
-                }
-                else
-                {
-                    pt[i].y = 2*frameHeight - pt[i].y - 1;
-                }                        
-            }
-        }
-
-        // To update J, reflect K through the center of the line
-        // connecting P and Q. If the resulting J is out of bounds,
-        // bounce it off the side of the bounding box, then update
-        // K by reflecting J through the center of line PQ.
-        pt[0].x = pt[1].x + pt[3].x - pt[2].x;
-        if (pt[0].x < 0 || frameWidth <= pt[0].x)
-        {
-            vpt[2].x = -vpt[2].x;
-            
-            if (pt[0].x < 0)
-            {
-                pt[0].x = -pt[0].x;
-            }
-            else
-            {
-                pt[0].x = 2*frameWidth - pt[0].x - 1;
-            }
-            pt[2].x = pt[1].x + pt[3].x - pt[0].x;
-        }
-        pt[0].y = pt[1].y + pt[3].y - pt[2].y;
-        if (pt[0].y < 0 || frameHeight <= pt[0].y)
-        {
-            vpt[2].y = -vpt[2].y;
-            
-            if (pt[0].y < 0)
-            {
-                pt[0].y = -pt[0].y;
-            }
-            else
-            {
-                pt[0].y = 2*frameHeight - pt[0].y - 1;
-            }
-            pt[2].y = pt[1].y + pt[3].y - pt[0].y;
-        }
-    }
-};
-
-const COLORREF ORANGE    = RGB(255, 192,   0);
-const COLORREF GREEN     = RGB(  0, 255,   0);
-const COLORREF MAGENTA   = RGB(255,   0, 255);
-const COLORREF YELLOW    = RGB(255, 255,   0);
-const COLORREF DARKGREEN = RGB(  0,  96,   0);
-const COLORREF BLUE      = RGB(  0,   0, 255);
-const COLORREF RED       = RGB(255,   0,   0);
-const COLORREF WHITE     = RGB(255, 255, 255);
-const COLORREF DARKGRAY  = RGB(128, 128, 128);
-
-// Global handle and color values used by DrawPixel function
-HDC g_hdc = 0;
-COLORREF g_color = 0;
-
-// Function used by Line and Conic functions to set pixel values
+// Function used by Line and Conic functions to set the pixel at
+// drawing coordinates (x,y) to the currently selected color
+//
 void DrawPixel(int x, int y)
 {
     SetPixel(g_hdc, x, y, g_color);
@@ -351,13 +203,13 @@ void InscribedPgon(HDC hdc, int x0, int y0, int x1, int y1, int x2, int y2)
 
     xy[4].x = x0 + 0.5 - X;      
     xy[4].y = y0 + 0.5 - tmp1/X; 
-                                 
+
     xy[5].x = x0 + 0.5 - U/Z;    
     xy[5].y = y0 + 0.5 + U/Z - Z;
-                                 
+
     xy[6].x = x0 + 0.5 - tmp1/Y; 
     xy[6].y = y0 + 0.5 - Y;      
-                                 
+
     xy[7].x = x0 + 0.5 + V/W;    
     xy[7].y = y0 + 0.5 + V/W - W;
 
@@ -425,16 +277,17 @@ void DrawAxes(HDC hdc, int x0, int y0, int x1, int y1, int x2, int y2)
 // which the ellipse is incribed, the bounding box for the ellipse,
 // the bounding polygon for the ellipse, the polygon inscribed in
 // the ellipse, and the major and minor axes of the ellipse.
-void UpdateEllipse(HDC hdc, BOUNCE *bounce)
+void UpdateEllipse(HDC hdc, Bounce *bounce)
 {
     HBRUSH hBrush;
     HPEN hPen;
     RECT rect;
     POINT xy[5];
     int x0, y0, x1, y1, x2, y2;
-    COLORREF color[] = { ORANGE, GREEN, MAGENTA, YELLOW };
-    
-    bounce->Update(xy);  // get new parallelogram coordinates
+    COLORREF color[] = { ORANGE, GREEN, MAGENTA, YELLOW};
+
+    // Update coordinates for animated parallelogram
+    bounce->Update((XYVAL*)xy);  
     xy[4] = xy[0];       // close polyline
 
     // Get ellipse center point and ends of conjugate diameters
@@ -489,12 +342,9 @@ void UpdateEllipse(HDC hdc, BOUNCE *bounce)
     // Draw ellipse inscribed in parallelogram
     g_hdc = hdc;  // set global handle used by DrawPixel function
     g_color = WHITE;
-    DrawEllipse(x0, y0, x1, y1, x2, y2);
+    Ellipse(x0, y0, x1, y1, x2, y2);
     g_hdc = 0;
 }
-
-// Offset of bounding box from top-left corner of window
-const int FRAME_OFFSET = 10;
 
 // Process the next message for this window
 LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) 
@@ -502,41 +352,32 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
     PAINTSTRUCT ps;
     HDC hdc;
     HDC hdcMem;
-    HPEN hPen;
-    RECT rect;
     static HBITMAP hbmp = 0;
     static int keypress = -1;
-    static RECT region;
-    static POINT frame[5];
-    static BOUNCE *bounce = 0;
+    static RECT rect;
+    static RECT frame;
+    static Bounce *bounce = 0;
 
     switch (message)
     {
     case WM_CREATE:
-        // Initialize parallelogram animation and frame
-        // around rectangular drawing region
-        GetClientRect(hwnd, &region);
-        region.right -= 2*FRAME_OFFSET;
-        region.bottom -= 2*FRAME_OFFSET;
-        assert(region.right > 100 && region.bottom > 100);
-        bounce = new BOUNCE(region.right, region.bottom);
-        frame[0].x = FRAME_OFFSET - 1;
-        frame[0].y = FRAME_OFFSET - 1;
-        frame[1].x = FRAME_OFFSET + region.right + 1;
-        frame[1].y = FRAME_OFFSET - 1;
-        frame[2].x = FRAME_OFFSET + region.right + 1;
-        frame[2].y = FRAME_OFFSET + region.bottom + 1;
-        frame[3].x = FRAME_OFFSET - 1;
-        frame[3].y = FRAME_OFFSET + region.bottom + 1;
-        frame[4] = frame[0];  // close polyline
+        // Define thin frame around rectangular drawing region
+        // and initialize parallelogram animation
+        GetClientRect(hwnd, &rect);
+        assert(rect.right > 100 && rect.bottom > 100);
+        frame.left = 2;
+        frame.top = 2;
+        frame.right = rect.right - 2;
+        frame.bottom = rect.bottom - 2;
+        bounce = new Bounce(rect.right, rect.bottom);
 
         // Create offscreen bitmap for drawing ellipses
         hdc = GetDC(hwnd);
-        hbmp = CreateCompatibleBitmap(hdc, region.right, region.bottom);
-    	hdcMem = CreateCompatibleDC(hdc);
-    	ReleaseDC(hwnd, hdc);
+        hbmp = CreateCompatibleBitmap(hdc, rect.right, rect.bottom);
+        hdcMem = CreateCompatibleDC(hdc);
+        ReleaseDC(hwnd, hdc);
         SelectObject(hdcMem, hbmp);
-    	FillRect(hdcMem, &region, (HBRUSH)(GetStockObject(BLACK_BRUSH)));
+        FillRect(hdcMem, &rect, (HBRUSH)(GetStockObject(BLACK_BRUSH)));
         DeleteDC(hdcMem);
         return 0;
 
@@ -548,24 +389,20 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
     case WM_PAINT: 
         hdc = BeginPaint(hwnd, &ps);
         hdcMem = CreateCompatibleDC(hdc);
-        hPen = CreatePen(PS_SOLID, 1, DARKGRAY);
-        SelectObject(hdc, hPen);
-        Polyline(hdc, frame, 5);
-        DeleteObject(hPen);
         SelectObject(hdcMem, hbmp);
+        BitBlt(hdc, 0, 0, rect.right, rect.bottom, hdcMem, 0, 0, SRCCOPY);
         if (keypress)
         {
             --keypress;
-        	FillRect(hdcMem, &region, (HBRUSH)(GetStockObject(BLACK_BRUSH)));
+            FillRect(hdcMem, &rect, (HBRUSH)(GetStockObject(BLACK_BRUSH)));
+            FrameRect(hdcMem, &frame, (HBRUSH)GetStockObject(GRAY_BRUSH));
             UpdateEllipse(hdcMem, bounce);
         }
-        BitBlt(hdc, FRAME_OFFSET, FRAME_OFFSET, region.right, region.bottom, 
-               hdcMem, 0, 0, SRCCOPY);
         DeleteDC(hdcMem);
         EndPaint(hwnd, &ps);
         if (keypress)
         {
-            Sleep(20);
+            Sleep(17);
             InvalidateRect(hwnd, NULL, true);
         }
         return 0; 
