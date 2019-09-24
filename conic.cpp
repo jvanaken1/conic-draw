@@ -119,8 +119,8 @@ void Conic(int xs, int ys, int xe, int ye,
 
     // Determine whether to draw all 8 octants or just an arc
     octant = GetOctant(D, E);    // starting octant number
-    if (xs != xe || ys != ye)       
-    {                           
+    if (xs != xe || ys != ye)
+    {
         // Draw just an arc
         x = xe - xs;             // origin at (xs,ys)
         y = ye - ys;
@@ -170,7 +170,7 @@ void Conic(int xs, int ys, int xe, int ye,
     k2 =  2*A + B;
     k3 =  2*A + 2*B + 2*C;
     if (!(octant & 1))
-    {      
+    {
         // Octant is even, so reverse signs
         d  = -d;   k1 = -k1;
         u  = -u;   k2 = -k2;
@@ -220,14 +220,14 @@ void Conic(int xs, int ys, int xe, int ye,
         // Cross boundary into next drawing octant
         if (--octantCount < 0)
         {
-            // Failed to draw all pixels in final octant
-            Line(x, y, xe, ye);  // band-aid okay here?
+            // Oops -- failed to draw all pixels in final octant
+            Line(x, y, xe, ye);  // draw line to end point
             return;
-        } 
+        }
 
         // Adjust drawing parameters for new octant
         if (++octant & 1)
-        {    
+        {
             // Cross square octant boundary
             d  = -d - u + v - k1 + k2;
             v  = -2*u + v - k1 + k2;
@@ -238,7 +238,7 @@ void Conic(int xs, int ys, int xe, int ye,
             swap = dxdiag;  dxdiag = -dydiag;  dydiag = swap;
         }
         else
-        {           
+        {
             // Cross diagonal octant boundary
             d  = -d + u - v/2 + k2/2 - 3*k3/8;
             u  =  u - v + k2/2 - k3/2;
@@ -251,8 +251,7 @@ void Conic(int xs, int ys, int xe, int ye,
     }
 }
 
-// Draws the outline of a full ellipse using an incremental curve-
-// tracking algorithm. The ellipse can be arbitrarily oriented. It
+// Draws a full ellipse. The ellipse can be arbitrarily oriented. It
 // is specified in terms of its center point P0, and the end points 
 // P1 and P2 of a pair of conjugate diameters of the ellipse. These
 // diameters can be at arbitrary angles with respect to each other.
@@ -262,7 +261,7 @@ void Conic(int xs, int ys, int xe, int ye,
 // the parallelogram. The function's six arguments are the x and y
 // coordinates (x0,y0) at P0, (x1,y1) at P1, and (x2,y2) at P2.
 //
-void DrawEllipse(int x0, int y0, int x1, int y1, int x2, int y2)
+void Ellipse(int x0, int y0, int x1, int y1, int x2, int y2)
 {
     int xp, yp, xq, yq, xprod, xe, ye;
     int A, B, C, D, E, F;
@@ -301,14 +300,14 @@ void DrawEllipse(int x0, int y0, int x1, int y1, int x2, int y2)
     Conic(x1, y1, x1, y1, A, B, C, D, E, F);
 }
 
-// Draws a spline curve consisting of a quarter of an ellipse (that is,
-// PI/2 radians of elliptical arc). The spline is specified in terms of
+// Draws a spline curve consisting of a PI/2-radian arc of ellipse
+// (a quarter of an ellipse). The spline is specified in terms of
 // its start point Ps = (xs,ys), end point Pe = (xe,ye), and control
-// point Pc = (xc,yc). The arc is contained within the triangle
+// point Pc = (xc,yc). The spline is contained within the triangle
 // formed by these three points. The curve is tangent at Ps to side
 // Ps.Pc of the triangle, and is tangent at Pe to side Pe.Pc.
 //
-void DrawEllipticalArc(int xs, int ys, int xc, int yc, int xe, int ye)
+void EllipticSpline(int xs, int ys, int xc, int yc, int xe, int ye)
 {
     int xp, yp, xq, yq, xprod;
     int A, B, C, D, E, F;
@@ -348,15 +347,14 @@ void DrawEllipticalArc(int xs, int ys, int xc, int yc, int xe, int ye)
     F =  0;
     Conic(xs, ys, xe, ye, A, B, C, D, E, F);
 }
- 
-// Draws a parabolic spline, which is an arc of a parabola. The arc is 
-// specified in terms of its start point Ps = (xs,ys), end point 
-// Pe = (xe,ye), and control point Pc = (xc,yc). The arc is contained
-// within the triangle formed by points Ps, Pc, and Pe. The arc is
-// tangent at Ps to side Ps.Pc of the triangle, and is tangent at Pe to
-// Pe.Pc. The shape of the curve is the same as that of a second-degree
-// Bezier curve with the same three control points.
-void DrawParabolicArc(int xs, int ys, int xc, int yc, int xe, int ye)
+
+// Draws a parabolic spline (aka quadratic Bezier curve). The spline 
+// is specified in terms of its start point Ps = (xs,ys), end point 
+// Pe = (xe,ye), and control point Pc = (xc,yc). The spline is
+// contained within the triangle formed by points Ps, Pc, and Pe. The
+// spline is tangent at Ps to side Ps.Pc of the triangle, and is
+// tangent at Pe to Pe.Pc.
+void ParabolicSpline(int xs, int ys, int xc, int yc, int xe, int ye)
 {
     int xq, yq, xr, yr, xprod;
     int A, B, C, D, E, F;
@@ -375,7 +373,6 @@ void DrawParabolicArc(int xs, int ys, int xc, int yc, int xe, int ye)
         Line(x, y, xe, ye);
         return;
     }
-
     if (xprod < 0)
     {
         int swap = xs; xs = xe; xe = swap;
