@@ -1,7 +1,8 @@
-# Pitteway's algorithm for drawing conic curves
+Pitteway's algorithm for drawing conic curves
+=======================
   
 _Author:_ Jerry R. VanAken  
-_Date:_ 9/23/2019
+_Date:_ 9/25/2019
 
 In 1967, just a couple of years after Jack Bresenham published his well known line-drawing algorithm [1], M.L.V. Pitteway published a more general version of the algorithm [2]. Pitteway's algorithm is based on similar principles, but can draw conic curves — ellipses, parabolas, and hyperbolas.
 
@@ -19,38 +20,17 @@ The effect of this limitation can be seen in the ellipse-drawing demo program, w
 
 ## Two demo programs
 
-This GitHub project provides the C++ source code for two programs, `demo1.cpp` and `demo2.cpp`, that demonstrate Pitteway's algorithm. Included are versions of these programs that run on Linux and Windows. Note that the source code for Pitteway's algorithm and its supporting routines is written in generic C++ and is contained in a separate file, `conic.cpp`, that contains no platform-specific code. The `Conic` function in this file is largely based on the source code listed in the Foley and van Dam book.
+This GitHub project provides the C++ source code for two programs, Demo1 and Demo2, that demonstrate Pitteway's algorithm. Included are versions of these programs that run on Linux and Windows. Note that the source code for Pitteway's algorithm and its supporting routines is written in generic C++ and is contained in a separate file, `conic.cpp`, that contains no platform-specific code. The `Conic` function in this file is largely based on the source code listed in the Foley and van Dam book.
 
-Users typically do not directly call the `Conic` function. Instead, they call the `Ellipse`, `EllipticSpline`, and `ParabolicSpline` functions. These functions calculate the conic equation coefficients for various curves, and then pass these coefficients to the `Conic` function, which does the actual drawing.
-
-Demo1 is an animation of a rotated ellipse that bounces off the walls of the drawing region and is squashed, stretched, and spun around in the process. Press any key to pause the free-running animation and begin single-stepping one frame at a time.
-
-Demo2 is an animation of a simple figure composed of 24 parabolic splines (aka quadratic Bezier curves).
-
-**How to build the demos**
-
-The two demo programs can be built to run in Linux or Windows. This project includes the following three subdirectories:
-* `linux-sdl` -- Contains the platform-specific code to run the demos on [SDL2](https://wiki.libsdl.org/FrontPage) (Simple DirectMedia Library 2.0) in Linux
-* `windows-sdl` -- Contains the platform-specific code to run the demos on SDL2 in Windows
-* `windows-gdi` -- Contains the platform-specific code to run the demos on the Win32 API in Windows
-
-Each of these subdirectories contains a README.md file that gives detailed instructions on how to build the demos for the designated platform.
-
-The main directory of this project contains the following source code files, which are used by all three versions of the two demos:
-
-* `conic.cpp` -- Contains an implementation of Pitteway's algorithm, plus several helper functions
-
-* `conic.h` -- The include file for the functions in `conic.cpp`
-
-* `bounce.cpp` -- Contains the implementation of the Bounce class, which is used to animate the two demos
-
-* `demo.h` -- The include file for the demo code in the `demo1.cpp` and `demo2.cpp` files
-
-None of these four files contains platform-dependent code.
+Users typically do not directly call the `Conic` function. Instead, they call the `Ellipse`, `EllipticSpline`, and `ParabolicSpline` functions in `conic.cpp`. These functions calculate the conic equation coefficients for various curves, and then pass these coefficients to the `Conic` function, which does the actual drawing.
 
 **Demo1 description**
 
-In Demo1, an animated ellipse is squashed, stretched, and bounced off the sides of the window. The white ellipse shown in each frame is drawn by Pitteway's algorithm. The ellipse is surrounded by these additional figures:
+Demo1 is an animation of a rotated ellipse that bounces off the walls of the drawing region and is squashed, stretched, and spun around in the process. The ellipse is drawn by Pitteway's algorithm.
+
+Press any key to pause the free-running animation and begin single-stepping one frame at a time.
+
+The animated ellipse in this demo is surrounded by these additional figures:
 1. The green filled rectangle in the background is the bounding box for the ellipse. The ellipse should touch each of the four sides of this box but never extend beyond the box. (A very thin ellipse will sometimes fail the bounding box test and either extend beyond the box or fail to touch the sides. This failure is due to the known limitation of the conic-drawing algorithm that was discussed earlier.)
 2. The blue polyline is the parallelogram in which the ellipse is inscribed. The ellipse touches the parallelogram at the midpoint of each side of the parallelogram, where the ellipse is tangent to that side.
 3. The red polyline is an 8-sided bounding polygon for the ellipse. This polygon has two vertical sides, two horizontal sides, and four sides that are +/- 45-degree diagonal lines. Each side touches the ellipse at a point at which the ellipse is tangent to that side.
@@ -61,17 +41,53 @@ The purpose in showing these additional figures is to point out that they can al
 
 Specifying an ellipse in terms of a bounding parallelogram (or conjugate diameters) seems much simpler and more natural than some of the more cumbersome methods that might be used — for example, specifying an angle of rotation, plus the lengths of the major and minor axes, and so on.
 
-For more information about the Demo1 program, see the ellipse.pdf file in the main directory of this project.
+For an explanation of the math behind the Demo1 program, see the ellipse.pdf file in the main directory of this project.
 
 **Demo2 description**
 
-In Demo2, the figure drawn in white is an asterisk glyph (aka "splat") composed of 24 parabolic splines (aka quadratic Bezier curves). Each spline is drawn by Pitteway's algorithm. The knots and control points for the splines are highlighted in blue. The spline skeleton is also shown.
+Demo2 is an animation of a simple figure composed of parabolic splines (aka quadratic Bezier curves). Each spline is drawn by Pitteway's algorithm. This figure, which is shown in white, is an asterisk glyph (aka "splat") composed of 24 connected splines. The knots and control points for the splines are highlighted in blue. The spline skeleton is also shown.
+
+Press any key to pause the free-running animation and begin single-stepping one frame at a time. 
 
 The demo uses barycentric coordinates to map the spline knots and control points to the interior of a parallelogram, whose four sides are drawn in green. As the animated parallelogram is squashed and stretched, the positions of these points change accordingly.
 
 The splines in this demo are drawn by the `ParabolicSpline` function, but you can change the code to call the `EllipticSpline` function instead. The result will be a noticeable change in curvature of the splines.
 
 If you're interested in learning more about conic splines, and possibly writing your own spline-drawing functions, two good sources are Theo Pavlidis' 1983 paper in ACM TOG [4] and Vaughn Pratt's SIGGRAPH 1985 paper [5].
+
+## What's in this project
+
+The main directory of your conic-draw installation contains these files:
+* `README.md` – This README file
+* `LICENSE` – MIT License
+* `ellipse.pdf` – An explanation of the math behind Demo1
+* `conic.cpp` – C++ implementation of Pitteway's algorithm, plus several helper functions
+* `conic.h` – The include file for the functions in `conic.cpp`
+* `bounce.cpp` – Source code for the Bounce class, which is used to animate the two demos
+* `demo.h` – The include file for the demo code in the `demo1.cpp` and `demo2.cpp` files
+
+The `*.cpp` and `*.h` files in the main directory contain no platform-dependent code.
+
+The Demo1 and Demo2 programs can be built to run in Linux or Windows. The platform-specific code is contained in the following three subdirectories:
+
+* `linux-sdl` – Contains the platform-specific source code to run the demos on [SDL2](https://wiki.libsdl.org/FrontPage) (Simple DirectMedia Library 2.0) in Linux
+    - `README.md` – Instructions on how to build the demos to run on SDL2 in Linux
+    - `Makefile` – The make file for this version of the demos
+    - `demo1.cpp` – The platform-specific source code for this version of Demo1
+    - `demo2.cpp` – The platform-specific source code for this version of Demo2
+
+* `windows-sdl` – Contains the platform-specific source code to run the demos on SDL2 in Windows
+    - `README.md` – Instructions on how to build the demos to run on SDL2 in Windows
+    - `Makefile` – The make file for this version of the demos
+    - `demo1.cpp` – The platform-specific source code for this version of Demo1
+    - `demo2.cpp` – The platform-specific source code for this version of Demo2
+    - `sdlpath.bat` – A batch file to add the SDL2 DLLs to the path environment variable
+ 
+* `windows-gdi` – Contains the platform-specific source code to run the demos on the Win32 API in Windows
+    - `README.md` – Instructions on how to build the demos to run on Win32 in Windows
+    - `Makefile` – The make file for this version of the demos
+    - `demo1.cpp` – The platform-specific source code for this version of Demo1
+    - `demo2.cpp` – The platform-specific source code for this version of Demo2
 
 ## Implementation detail
 
