@@ -105,7 +105,7 @@ void Bounce::Update(XYVAL xy[])
     // bounce it off the side of the bounding box, then update
     // K by reflecting J through the center of line PQ.
     pt[0].x = pt[1].x + pt[3].x - pt[2].x;
-    if (pt[0].x < 0 || xmax <= pt[0].x)
+    if (pt[0].x < xmin || xmax <= pt[0].x)
     {
         vpt[2].x = -vpt[2].x;
         if (pt[0].x < xmin)
